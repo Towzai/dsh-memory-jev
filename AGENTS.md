@@ -79,6 +79,7 @@ data/                 库/日志/预算（.gitignore，不进 git、不进同步
 9. 日期统一 `localDay()`（Asia/Shanghai），禁用 UTC `toISOString().slice(0,10)`。
 10. 依赖不装子依赖：插件侧不 import 外部解析库；一次性数据搬运放带外脚本。
 11. **`egressGuard` 只管出网，不管存取，且默认关**：开启后问题命中疑似密钥 → **不发往端点**，召回**回落本地排序（不吞答案）**、注入跳过当轮、写入照存。**禁止**用正则过滤候选池、也禁止按正则给条目打标——存不存是使用者的决定（`tools/test_sensitive.mjs` 锁死这条边界）。
+12. **工具返回值必须是无损 JSON**：自有属性值为 `undefined`（或 `NaN`/`Infinity`）时，JSON 往返会丢键，DSH 直接判 `returned invalid output` —— 而**写入其实已经成功**，调用方看到的是"成功却报错"。统一由注册点的 `jsonSafe()` 包装处理，**不要在几十个 return 站点逐个手工补**（`tools/test_lossless.mjs` 覆盖全部可离线驱动的工具）。另注：Windows 上测试脚本不要带着监听中的 server 直接 `process.exit()`，会触发 libuv `UV_HANDLE_CLOSING` 断言、表现为测试崩溃；先 `close()` 再自然退出。
 
 ## 可调量级（都在 `DEFAULT_CONFIG`，改 profile 覆盖层生效，**改完要进程级重启**）
 

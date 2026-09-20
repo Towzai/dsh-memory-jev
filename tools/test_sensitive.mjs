@@ -1,49 +1,50 @@
 /**
- * Sensitive-boundary regression tests.
+ * Egress-guard regression tests (v0.3.0).
  *
- * Two rules that are easy to get wrong and expensive to get wrong:
- *  1. FLAGGING a stored entry (so it never auto-injects) must use the HARD
- *     patterns only — flagging on word-level patterns (`password` / `api_key`)
- *     would silently drop ordinary technical notes out of recall.
- *  2. EGRESS control (what may be sent to the decision model) stays
- *     conservative: a word mention is enough to skip the call.
+ * Design rule: the regex guard protects the OUTBOUND path only. It never decides
+ * what may be stored, what may be retrieved, or what may be injected — those are
+ * the user's calls (if an entry should not exist, don't write it).
+ *
+ * Concretely:
+ *   - the guard fires on the QUESTION and makes recall fall back to local ranking
+ *     instead of returning nothing;
+ *   - stored entries are never filtered out by a regex;
+ *   - the `sensitive` field is informational, and is not set by pattern matching.
  */
 import assert from 'node:assert/strict'
 import { loadPlugin } from './load-plugin.mjs'
 
 const plugin = await loadPlugin()
 
-// --- 1) hard vs word-level patterns -----------------------------------------
-assert.equal(plugin.containsHardSecret('联系我 13812345678'), true, 'CN mobile is a hard secret')
-assert.equal(plugin.containsHardSecret('token: sk-abcdefghijkl'), true, 'sk- value is a hard secret')
-assert.equal(plugin.containsHardSecret('把 api_key 放进环境变量，不要写进配置'), false,
-  'a WORD mention must not flag an entry')
-assert.equal(plugin.containsSensitive('把 api_key 放进环境变量，不要写进配置'), true,
-  'egress control stays conservative on word mentions')
+// 1) the matcher still exists, for egress decisions only
+assert.equal(plugin.containsSensitive('卡号 6222021234567890123'), true)
+assert.equal(plugin.containsSensitive('帮我看下构建脚本'), false)
 
-// --- 2) normalizeEntry back-fills the flag on imported entries ---------------
+// 2) no regex-driven flagging on load — the label is not a machine verdict
 assert.equal(
   plugin.normalizeEntry({ id: 'MEM-T-1', title: '联系人', content: '手机 13900000000' }).sensitive,
-  true,
-  'imported entry holding a real number gets flagged',
-)
-assert.equal(
-  plugin.normalizeEntry({ id: 'MEM-T-2', title: '构建', content: '用 esbuild 打包；key 走环境变量' }).sensitive,
   false,
-  'ordinary technical note stays injectable',
+  'normalizeEntry must not flag entries by pattern',
+)
+// …but an explicit flag survives a round-trip
+assert.equal(
+  plugin.normalizeEntry({ id: 'MEM-T-2', title: 'x', content: 'y', sensitive: true }).sensitive,
+  true,
 )
 
-// --- 3) an explicit decision is never overridden -----------------------------
-assert.equal(plugin.normalizeEntry({ id: 'MEM-T-3', title: 'x', content: '普通内容', sensitive: true }).sensitive, true)
-assert.equal(plugin.normalizeEntry({ id: 'MEM-T-4', title: 'y', content: '手机 13800000000', sensitive: false }).sensitive, false,
-  'a human-cleared flag stays cleared')
+// 3) the removed helper must stay removed (guards against reintroducing
+//    retrieval-time filtering by pattern)
+assert.equal(typeof plugin.containsHardSecret, 'undefined')
 
-// --- 4) the flag does not leak into the rendered block -----------------------
+// 4) rendering is unaffected by the redesign
 const block = plugin.renderInjectionBlock([
-  { id: 'MEM-T-5', title: '普通记忆', category: 'fact', jev_prob: 0.9, content: '正文' },
+  { id: 'MEM-T-3', title: '普通记忆', category: 'fact', jev_prob: 0.9, content: '正文' },
 ])
 assert.ok(block.includes('<retrieved-memories count="1" judged-by="jev">'))
-assert.ok(block.includes('MEM-T-5'))
+assert.ok(block.includes('MEM-T-3'))
+
+// 5) the egress guard defaults to ON and can be switched off
+assert.equal(plugin.DEFAULT_CONFIG.egressGuard, true)
 
 console.log('test_sensitive_ok')
 process.exit(0)

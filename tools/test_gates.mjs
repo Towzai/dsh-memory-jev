@@ -112,7 +112,7 @@ process.env.OPENROUTER_API_KEY = srv.apiKey
   const { tools } = setup()
   fake.reset({ mode: 'noul' })
   const tool = toolByName(tools, 'mem_remember')
-  const out = await tool.execute({ content: '我的手机号是 13812345678，api_key=sk-live-abcdefghijk', title: '联系密钥' }, {})
+  const out = await tool.execute({ content: '联系号码 13800000000，api_key=sk-live-abcdefghijk', title: '联系密钥' }, {})
   assert.equal(out.gate, 'redacted-skip')
   assert.equal(out.persisted, true)
 }

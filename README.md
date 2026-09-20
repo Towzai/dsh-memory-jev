@@ -99,6 +99,7 @@ dsh plugin --profile web install <owner>/dsh-memory-jev
 - **Redaction guard**: if a question or body matches phone / national-id / bank-card / `sk-` / `Bearer` / `password` / `api_key` patterns, the judgement is **skipped entirely** (`gate=redacted-skip`) — one missed judgement is preferable to leaking.
 - **Audit log**: ids, probabilities, tokens, CNY cost, error kind and the `build` version only. **No bodies, no raw queries** (hash and length only).
 - **Local persistence**: store, audit log and budget file live next to your `storePath`. Nothing is synced or uploaded.
+- **Sensitive entries**: an entry whose body holds a *hard* secret (phone / national id / bank card / `sk-…` / `Bearer …`) is flagged `sensitive` and is then **never auto-injected and never returned by search** — read it on purpose with `mem_view <id>` (`mem_list` marks such rows `[sensitive]`). Word-level mentions (`password`, `api_key`) deliberately do **not** flag an entry: ordinary technical notes mention them constantly, and flagging on them would silently remove a large share of the library from recall.
 - **Server-side retention**: none (request-and-discard). Memories exist only in your local store file.
 
 ---

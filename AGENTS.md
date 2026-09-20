@@ -78,6 +78,7 @@ data/                 库/日志/预算（.gitignore，不进 git、不进同步
 8. tool schema：每个 `type:'object'` 节点必须显式 `additionalProperties` boolean。
 9. 日期统一 `localDay()`（Asia/Shanghai），禁用 UTC `toISOString().slice(0,10)`。
 10. 依赖不装子依赖：插件侧不 import 外部解析库；一次性数据搬运放带外脚本。
+11. **敏感边界分两套模式，别混用**：**打标**（`sensitive`，决定"永不自动注入"）只用**硬模式**——手机号 / 身份证 / 银行卡 / `sk-` / `Bearer`；**外发判定**（决定"要不要发给 Jev"）用**全模式**（含词级的 `password` / `api_key`，保守）。按词级模式打标会把一大批正经技术笔记静默踢出召回（`tools/test_sensitive.mjs` 锁死这个边界）。
 
 ## 注入块防伪造
 

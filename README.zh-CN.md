@@ -87,6 +87,24 @@ dsh plugin --profile web install <owner>/dsh-memory-jev
 | `dailyBudgetCny` | `3.5` | 每日预算（人民币） |
 | `dailyCallLimit` | `3000` | 每日调用次数上限 |
 
+### 调参
+
+所有"量级"都是配置项，没有藏在代码里。改 profile 的 `cordis.patch.yml`（或 bundle 自己的 patch），**然后进程级重启**。
+
+| 键 | 默认 | 作用 |
+|---|---|---|
+| `injectEnabled` | `true` | 注入门总开关 |
+| `injectLimit` / `injectMinProbability` | `3` / `0.6` | 每次注入条数 / 相关性阈值（`mem_pin` 过的条目跳过阈值） |
+| `recallMinProbability` | `0.5` | `mem_recall` 阈值——**单次调用**也可用 `min_probability` 覆盖 |
+| `prefilterLimit` / `supersedeCandidates` | `40` / `12` | 送给 Jev 的候选数 / 写入门"可能重复"候选数 |
+| `worthReviewThreshold` | `0.35` | 低于此值写入门只提示"建议复核"，**从不阻止写入** |
+| `dailyBudgetCny` / `dailyCallLimit` | `3.5` / `3000` | 日预算（¥）/ 日调用上限 |
+| `injectTimeoutMs` / `toolTimeoutMs` | `1500` / `15000` | 注入路径延迟预算 / 工具侧 |
+| `egressGuard` | `false` | 只管出网的守卫（可选开启） |
+| `injectInSubagents` | `false` | 子会话是否注入 |
+
+调阈值要**看证据不靠感觉**：审计日志里记了每条候选的 `noul` 概率与当时的 `threshold`，所以 `mem_gate_log`（或按天分片的 `gate-decisions-*.jsonl`）能直接告诉你"某个阈值会放进哪些、挡掉哪些"。
+
 **成本口径**：Jev 输入 $0.042/M、输出不计费；插件按人民币记账与展示（内置换算率见 `lib/index.js` 的 `USDTOCNY`）。一次判定实测 2000–4200 输入 token ≈ **¥0.0006–0.0012**。
 
 ---
@@ -99,7 +117,7 @@ dsh plugin --profile web install <owner>/dsh-memory-jev
 - **脱敏拦截**：问题或正文命中手机号 / 身份证 / 银行卡 / `sk-` / `Bearer` / `password` / `api_key` 等模式时，**本次判定直接跳过**（`gate=redacted-skip`），宁可少判一次也不外发。
 - **审计日志**：只记 `id`、概率、token、人民币成本、错误与 `build` 版本；**不记正文、不记 query 原文**（只记 hash 与长度）。
 - **落盘**：记忆库、审计日志、预算都在你自己的 `storePath` 旁边；插件不联网同步、不上传。
-- **出网守卫**（`egressGuard`，默认开）：当**问题**里出现疑似密钥（手机号 / 身份证 / 银行卡 / `sk-…` / `Bearer …` / `password` / `api_key`）时，**不向端点发送任何内容**——召回**回落本地排序、照样把记忆给你**，注入跳过当轮。守卫只管**出网**：它**不决定**什么能存、能查、能注入。如果你觉得某条不该存在，那就别写它——插件不会替你二次判断该不该留。
+- **出网守卫**（`egressGuard`，**默认关**，可选开启）：开启后，**问题**里出现疑似密钥（手机号 / 身份证 / 银行卡 / `sk-…` / `Bearer …` / `password` / `api_key`）时**不向端点发送**——召回**回落本地排序、照样把记忆给你**，注入跳过当轮。它只管**出网**：不决定什么能存、能查、能注入。默认关是因为**什么算敏感该由使用者判定**；想要这层额外边界时再打开。下面所有阈值与预算都是普通配置项——见「配置」下的**调参**一节。
 - **服务端保留**：无（请求即弃）；记忆只存在你本地的存储文件里。
 
 ---

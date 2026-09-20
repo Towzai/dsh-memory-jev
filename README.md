@@ -87,6 +87,24 @@ dsh plugin --profile web install <owner>/dsh-memory-jev
 | `dailyBudgetCny` | `3.5` | Daily budget (CNY) |
 | `dailyCallLimit` | `3000` | Daily call cap |
 
+### Tuning
+
+Every magnitude is a config value — nothing is hidden in the code. Change them in the profile's `cordis.patch.yml` (or the bundle's own patch) and **restart DSH at process level**.
+
+| Key | Default | Effect |
+|---|---|---|
+| `injectEnabled` | `true` | master switch for the injection gate |
+| `injectLimit` / `injectMinProbability` | `3` / `0.6` | memories per injection / relevance threshold (pinned entries bypass it) |
+| `recallMinProbability` | `0.5` | `mem_recall` threshold — also overridable **per call** via `min_probability` |
+| `prefilterLimit` / `supersedeCandidates` | `40` / `12` | candidates sent to Jev / duplicate candidates for the write gate |
+| `worthReviewThreshold` | `0.35` | below this the write gate only annotates "review suggested" — it never blocks a write |
+| `dailyBudgetCny` / `dailyCallLimit` | `3.5` / `3000` | daily budget (CNY) and call cap |
+| `injectTimeoutMs` / `toolTimeoutMs` | `1500` / `15000` | latency budget for the injection path / for tools |
+| `egressGuard` | `false` | outbound-only pattern guard (opt-in) |
+| `injectInSubagents` | `false` | inject in child sessions too |
+
+Tune from evidence, not feel: the audit log records every candidate's `noul` probability together with the threshold in force, so `mem_gate_log` (or the per-day `gate-decisions-*.jsonl` shard) tells you exactly what a given threshold would have admitted or dropped.
+
 **Cost model** — Jev input is $0.042/M and output is free. The plugin accounts and reports in CNY (rate constant `USDTOCNY` in `lib/index.js`). A measured judgement costs 2,000–4,200 input tokens ≈ **¥0.0006–0.0012**. Budgeting is reserve → settle → reconcile, with a serialized ledger so concurrent calls cannot overspend.
 
 ---
@@ -99,7 +117,7 @@ dsh plugin --profile web install <owner>/dsh-memory-jev
 - **Redaction guard**: if a question or body matches phone / national-id / bank-card / `sk-` / `Bearer` / `password` / `api_key` patterns, the judgement is **skipped entirely** (`gate=redacted-skip`) — one missed judgement is preferable to leaking.
 - **Audit log**: ids, probabilities, tokens, CNY cost, error kind and the `build` version only. **No bodies, no raw queries** (hash and length only).
 - **Local persistence**: store, audit log and budget file live next to your `storePath`. Nothing is synced or uploaded.
-- **Egress guard** (`egressGuard`, default on): when a *question* looks like it carries a secret (phone / national id / bank card / `sk-…` / `Bearer …` / `password` / `api_key`), nothing is sent to the endpoint — recall **falls back to local ranking and still returns your memories**, and auto-injection skips that turn. The guard governs **what leaves the machine only**: it never decides what may be stored, retrieved or injected. If an entry should not exist, don't write it — the plugin will not second-guess what you chose to keep.
+- **Egress guard** (`egressGuard`, **default off** — opt-in): when enabled, a *question* that looks like it carries a secret (phone / national id / bank card / `sk-…` / `Bearer …` / `password` / `api_key`) is not sent to the endpoint — recall **falls back to local ranking and still returns your memories**, and auto-injection skips that turn. It governs **what leaves the machine only**: it never decides what may be stored, retrieved or injected. Default is off because *what counts as sensitive is the user's call*; turn it on when you want the extra boundary. Every threshold and budget below is a plain config value — see **Tuning** under Configuration.
 - **Server-side retention**: none (request-and-discard). Memories exist only in your local store file.
 
 ---

@@ -43,8 +43,8 @@ const block = plugin.renderInjectionBlock([
 assert.ok(block.includes('<retrieved-memories count="1" judged-by="jev">'))
 assert.ok(block.includes('MEM-T-3'))
 
-// 5) the egress guard defaults to ON and can be switched off
-assert.equal(plugin.DEFAULT_CONFIG.egressGuard, true)
+// 5) the egress guard is OPT-IN — "what counts as sensitive" is the user's call
+assert.equal(plugin.DEFAULT_CONFIG.egressGuard, false)
 
 console.log('test_sensitive_ok')
 process.exit(0)

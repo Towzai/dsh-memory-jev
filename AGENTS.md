@@ -78,7 +78,23 @@ data/                 库/日志/预算（.gitignore，不进 git、不进同步
 8. tool schema：每个 `type:'object'` 节点必须显式 `additionalProperties` boolean。
 9. 日期统一 `localDay()`（Asia/Shanghai），禁用 UTC `toISOString().slice(0,10)`。
 10. 依赖不装子依赖：插件侧不 import 外部解析库；一次性数据搬运放带外脚本。
-11. **`egressGuard` 只管出网，不管存取**：问题里命中疑似密钥 → **不发往端点**，召回**回落本地排序（不吞答案）**、注入跳过当轮、写入照存。**禁止**用正则过滤候选池、也禁止按正则给条目打标——存不存是使用者的决定（`tools/test_sensitive.mjs` 锁死这条边界）。
+11. **`egressGuard` 只管出网，不管存取，且默认关**：开启后问题命中疑似密钥 → **不发往端点**，召回**回落本地排序（不吞答案）**、注入跳过当轮、写入照存。**禁止**用正则过滤候选池、也禁止按正则给条目打标——存不存是使用者的决定（`tools/test_sensitive.mjs` 锁死这条边界）。
+
+## 可调量级（都在 `DEFAULT_CONFIG`，改 profile 覆盖层生效，**改完要进程级重启**）
+
+| 键 | 默认 | 作用 |
+|---|---|---|
+| `injectEnabled` | `true` | 注入门总开关 |
+| `injectLimit` / `injectMinProbability` | `3` / `0.6` | 每次注入条数 / 相关性阈值（`mem_pin` 过的条目跳过阈值） |
+| `recallMinProbability` | `0.5` | `mem_recall` 阈值；**单次可用 `min_probability` 覆盖** |
+| `prefilterLimit` / `supersedeCandidates` | `40` / `12` | 粗筛送进 Jev 的候选数 / 写入门"可能重复"候选数 |
+| `worthReviewThreshold` | `0.35` | 写入门低于此值只提示复核，不阻止写入 |
+| `dailyBudgetCny` / `dailyCallLimit` | `3.5` / `3000` | 日预算（¥）/ 日调用上限 |
+| `injectTimeoutMs` / `toolTimeoutMs` | `1500` / `15000` | 注入路径延迟预算 / 工具侧 |
+| `egressGuard` | `false` | 出网守卫（可选开启） |
+| `injectInSubagents` | `false` | 子会话是否注入 |
+
+`BUILD` 从 `package.json` 现读，不再硬编码——避免版本号漂移。
 
 ## 注入块防伪造
 

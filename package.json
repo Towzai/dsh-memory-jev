@@ -1,6 +1,6 @@
 {
   "name": "dsh-memory-jev",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "DSH memory plugin gated by the TypeSafe Jev decision model: mem_* tools whose every read/write is a typed judgement (choice/noul) — write gate, recall gate and a fail-closed injection gate with budget, audit log and restore/merge.",
   "license": "MIT",
   "type": "module",

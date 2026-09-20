@@ -1,0 +1,78 @@
+{
+  "name": "dsh-memory-jev",
+  "version": "0.1.0",
+  "description": "DSH memory plugin gated by the TypeSafe Jev decision model: mem_* tools whose every read/write is a typed judgement (choice/noul) — write gate, recall gate and a fail-closed injection gate with budget, audit log and restore/merge.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "AGENTS.md"
+  ],
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis-plugin",
+    "memory",
+    "agent-memory",
+    "jev"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Towzai/dsh-memory-jev.git"
+  },
+  "homepage": "https://github.com/Towzai/dsh-memory-jev",
+  "bugs": {
+    "url": "https://github.com/Towzai/dsh-memory-jev/issues"
+  },
+  "dsh": {
+    "plugin": true,
+    "kind": "server",
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "disclosure": {
+    "cloud": true,
+    "network": [
+      "https://openrouter.ai/api/alpha/decisions"
+    ],
+    "offlineMode": true,
+    "apiKeys": [
+      {
+        "env": "OPENROUTER_API_KEY",
+        "storage": "process-env-or-windows-registry",
+        "logged": false
+      }
+    ],
+    "permissions": [
+      "network:openrouter.ai",
+      "fs:read-write-own-store-and-audit-log",
+      "env:OPENROUTER_API_KEY"
+    ],
+    "jurisdiction": [],
+    "retention": "none"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.0",
+    "@deepseek-ai/dsh-llm": ">=0.1.0",
+    "@deepseek-ai/dsh-tools": ">=0.1.0"
+  },
+  "scripts": {
+    "verify": "node --import ./tools/load-plugin.mjs tools/verify_all.mjs",
+    "test": "node --import ./tools/load-plugin.mjs tools/verify_all.mjs",
+    "gate-report": "node tools/gate_report.mjs"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+# dsh-memory-jev bundle layer
+# Install: copy/install this package into the profile node_modules, then process-level restart.
+- insert:
+    - id: dsh-memory-jev
+      name: 'dsh-memory-jev'
+      config:
+        injectEnabled: true
+        injectInSubagents: false
+        injectLimit: 3
+        injectMinProbability: 0.6
+        prefilterLimit: 40
+        supersedeCandidates: 12
+        dailyBudgetCny: 3.5
+        dailyCallLimit: 3000
+        storePath: ''
